@@ -507,6 +507,21 @@ namespace NeuralNetwork
             var y = LForwardsubs(L, b);
             return UBackwardsubs(U, y);
         }
+
+        public static Matrix Random(int row, int col, int? seed = null)
+        {
+            if (row <= 0 || col <= 0) throw new ArgumentException();
+            var ret = new Matrix(row, col);
+            var rnd = new Random(seed ?? DateTime.Now.Millisecond);
+            for (int i = 0; i < row; ++i)
+            {
+                for (int j = 0; j < col; ++j)
+                {
+                    ret[i, j] = rnd.NextDouble() - rnd.NextDouble();
+                }
+            }
+            return ret;
+        }
         #endregion
     }
 }
