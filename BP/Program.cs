@@ -34,7 +34,7 @@ namespace NotFounds
             var hiddenLayer = Matrix.Random(HiddenSize, 1);           //new Matrix(new double[,] { { 0.2 }, { -0.3 }, { 0.1} });
             var outputLayer = Matrix.Random(OutputSize, 1);           //new Matrix(new double[,] { { 0.4 }, { 0.2} });
 
-            var BP = new BackPropagation(inputWeight, outputWeight, hiddenLayer, outputLayer, null, Rate);
+            var BP = new BackPropagation(inputWeight, outputWeight, hiddenLayer, outputLayer, null, null, Rate);
 
             Console.WriteLine($"Initial State");
             BP.Print(4);

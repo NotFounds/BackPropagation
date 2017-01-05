@@ -11,7 +11,8 @@ namespace NeuralNetwork.BackPropagation
         public Matrix _inputWeight { private set; get; }
         public Matrix _outputWeight { private set; get; }
         public double LearnRate { set; get; }
-        public LogisticFunction _logisticFunc;
+        public LogisticFunction _hiddenLogisticFunc;
+        public LogisticFunction _outputLogisticFunc;
 
         /// <summary>
         /// 3Layer Backpropagation Class
@@ -20,50 +21,54 @@ namespace NeuralNetwork.BackPropagation
         /// <param name="outputWeight">Output Weight.</param>
         /// <param name="hiddenLayer">Hidden layer.</param>
         /// <param name="outputLayer">Output layer.</param>
+        /// <param name="hiddenLogisticFunc">Hidden Layer Logistic Function. Default = SigmoidFunc</param>
+        /// <param name="outputLogisticFunc">Output Layer Logistic Function. Default = SigmoidFunc</param>
         /// <param name="learnRate">Learn rate. Default = 0.001</param>
-        public BackPropagation(Matrix inputWeight, Matrix outputWeight, Matrix hiddenLayer, Matrix outputLayer, LogisticFunction logisticFunc = null, double learnRate = 0.001)
+        public BackPropagation(Matrix inputWeight, Matrix outputWeight, Matrix hiddenLayer, Matrix outputLayer,
+                               LogisticFunction hiddenLogisticFunc = null, LogisticFunction outputLogisticFunc = null, double learnRate = 0.001)
         {
             _inputWeight  = inputWeight;
             _outputWeight = outputWeight;
             _hiddenLayer  = hiddenLayer;
             _outputLayer  = outputLayer;
-            _logisticFunc = logisticFunc ?? new Sigmoid();
+            _hiddenLogisticFunc = hiddenLogisticFunc ?? new Sigmoid();
+            _outputLogisticFunc = outputLogisticFunc ?? new Sigmoid();
             LearnRate = learnRate;
         }
 
         public Matrix Run(Matrix input)
         {
             var hidden = _inputWeight * input + _hiddenLayer;
-            _logisticFunc.Caluculate(ref hidden);
+            _hiddenLogisticFunc.F(ref hidden);
 
             var output = _outputWeight * hidden + _outputLayer;
-            _logisticFunc.Caluculate(ref output);
+            _outputLogisticFunc.F(ref output);
 
             return output;
         }
 
         public void Train(Matrix input, Matrix target)
         {
-            var hidden = _inputWeight * input + _hiddenLayer;
-            _logisticFunc.Caluculate(ref hidden);
+            var hidden  = _inputWeight * input + _hiddenLayer;
+            var hiddenF = _hiddenLogisticFunc.F(hidden);
 
-            var output = _outputWeight * hidden + _outputLayer;
-            _logisticFunc.Caluculate(ref output);
+            var output  = _outputWeight * hidden + _outputLayer;
+            var outputF = _outputLogisticFunc.F(output);
 
             // Calculate the error
-            var outputAdjustment = new Matrix(output.Row, 1);
-            var hiddenAdjustment = new Matrix(hidden.Row, 1);
+            var outputAdjustment = new Matrix(outputF.Row, 1);
+            var hiddenAdjustment = new Matrix(hiddenF.Row, 1);
 
             for (int i = 0; i < outputAdjustment.Row; ++i)
             {
-                outputAdjustment[i, 0] = output[i, 0] * (1 - output[i, 0]) * (target[i, 0] - output[i, 0]);
+                outputAdjustment[i, 0] = _outputLogisticFunc.Df(outputF[i, 0], output[i, 0]) * (target[i, 0] - output[i, 0]);
             }
 
             for (int i = 0; i < hiddenAdjustment.Row; ++i)
             {
                 for (int j = 0; j < outputAdjustment.Row; ++j)
                 {
-                    hiddenAdjustment[i, 0] += hidden[j, 0] * (1 - hidden[j, 0]) * outputAdjustment[j, 0] * _outputWeight[j, i];
+                    hiddenAdjustment[i, 0] += _outputLogisticFunc.Df(hiddenF[j, 0], hidden[j, 0]) * outputAdjustment[j, 0] * _outputWeight[j, i];
                 }
             }
 
@@ -84,11 +89,7 @@ namespace NeuralNetwork.BackPropagation
                 }
             }
 
-            for (int i = 0; i < _hiddenLayer.Row; ++i)
-            {
-                _hiddenLayer[i, 0] += hiddenAdjustment[i, 0] * LearnRate;
-            }
-
+            _hiddenLayer += hiddenAdjustment * LearnRate;
             _outputLayer += outputAdjustment * LearnRate;
         }
 
