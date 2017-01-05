@@ -33,10 +33,10 @@ namespace NeuralNetwork.BackPropagation
 
         public Matrix Run(Matrix input)
         {
-            var outHidden = _inputWeight * input + _hiddenLayer;
-            _logisticFunc.Caluculate(ref outHidden);
+            var hidden = _inputWeight * input + _hiddenLayer;
+            _logisticFunc.Caluculate(ref hidden);
 
-            var output = _outputWeight * outHidden + _outputLayer;
+            var output = _outputWeight * hidden + _outputLayer;
             _logisticFunc.Caluculate(ref output);
 
             return output;
@@ -44,15 +44,15 @@ namespace NeuralNetwork.BackPropagation
 
         public void Train(Matrix input, Matrix target)
         {
-            var outHidden = _inputWeight * input + _hiddenLayer;
-            _logisticFunc.Caluculate(ref outHidden);
+            var hidden = _inputWeight * input + _hiddenLayer;
+            _logisticFunc.Caluculate(ref hidden);
 
-            var output = _outputWeight * outHidden + _outputLayer;
+            var output = _outputWeight * hidden + _outputLayer;
             _logisticFunc.Caluculate(ref output);
 
             // Calculate the error
             var outputAdjustment = new Matrix(output.Row, 1);
-            var hiddenAdjustment = new Matrix(outHidden.Row, 1);
+            var hiddenAdjustment = new Matrix(hidden.Row, 1);
 
             for (int i = 0; i < outputAdjustment.Row; ++i)
             {
@@ -63,7 +63,7 @@ namespace NeuralNetwork.BackPropagation
             {
                 for (int j = 0; j < outputAdjustment.Row; ++j)
                 {
-                    hiddenAdjustment[i, 0] += outHidden[j, 0] * (1 - outHidden[j, 0]) * outputAdjustment[j, 0] * _outputWeight[j, i];
+                    hiddenAdjustment[i, 0] += hidden[j, 0] * (1 - hidden[j, 0]) * outputAdjustment[j, 0] * _outputWeight[j, i];
                 }
             }
 
@@ -80,7 +80,7 @@ namespace NeuralNetwork.BackPropagation
             {
                 for (int j = 0; j < _outputWeight.Col; ++j)
                 {
-                    _outputWeight[i, j] += outputAdjustment[i, 0] * outHidden[j, 0] * LearnRate;
+                    _outputWeight[i, j] += outputAdjustment[i, 0] * hidden[j, 0] * LearnRate;
                 }
             }
 
