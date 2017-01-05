@@ -11,6 +11,7 @@ namespace NeuralNetwork.BackPropagation
         public Matrix _inputWeight { private set; get; }
         public Matrix _outputWeight { private set; get; }
         public double LearnRate { set; get; }
+        public LogisticFunction _logisticFunc;
 
         /// <summary>
         /// 3Layer Backpropagation Class
@@ -20,22 +21,23 @@ namespace NeuralNetwork.BackPropagation
         /// <param name="hiddenLayer">Hidden layer.</param>
         /// <param name="outputLayer">Output layer.</param>
         /// <param name="learnRate">Learn rate. Default = 0.001</param>
-        public BackPropagation(Matrix inputWeight, Matrix outputWeight, Matrix hiddenLayer, Matrix outputLayer, double learnRate = 0.001)
+        public BackPropagation(Matrix inputWeight, Matrix outputWeight, Matrix hiddenLayer, Matrix outputLayer, LogisticFunction logisticFunc = null, double learnRate = 0.001)
         {
-            _inputWeight = inputWeight;
+            _inputWeight  = inputWeight;
             _outputWeight = outputWeight;
-            _hiddenLayer = hiddenLayer;
-            _outputLayer = outputLayer;
+            _hiddenLayer  = hiddenLayer;
+            _outputLayer  = outputLayer;
+            _logisticFunc = logisticFunc ?? new Sigmoid();
             LearnRate = learnRate;
         }
 
         public Matrix Run(Matrix input)
         {
             var outHidden = _inputWeight * input + _hiddenLayer;
-            Sigmoid(ref outHidden);
+            _logisticFunc.Caluculate(ref outHidden);
 
             var output = _outputWeight * outHidden + _outputLayer;
-            Sigmoid(ref output);
+            _logisticFunc.Caluculate(ref output);
 
             return output;
         }
@@ -43,10 +45,10 @@ namespace NeuralNetwork.BackPropagation
         public void Train(Matrix input, Matrix target)
         {
             var outHidden = _inputWeight * input + _hiddenLayer;
-            Sigmoid(ref outHidden);
+            _logisticFunc.Caluculate(ref outHidden);
 
             var output = _outputWeight * outHidden + _outputLayer;
-            Sigmoid(ref output);
+            _logisticFunc.Caluculate(ref output);
 
             // Calculate the error
             var outputAdjustment = new Matrix(output.Row, 1);
@@ -88,17 +90,6 @@ namespace NeuralNetwork.BackPropagation
             }
 
             _outputLayer += outputAdjustment * LearnRate;
-        }
-
-        public void Sigmoid(ref Matrix mat)
-        {
-            for (int i = 0; i < mat.Row; ++i)
-            {
-                for (int j = 0; j < mat.Col; ++j)
-                {
-                    mat[i, j] = LogisticFunctions.Sigmoid(mat[i, j]);
-                }
-            }
         }
 
         public void Print(int n = 20)
