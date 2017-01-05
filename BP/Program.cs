@@ -31,7 +31,7 @@ namespace NotFounds
             var hiddenLayer  = new Matrix(new double[,] { { 0.2 }, { -0.3 }, { 0.1} });
             var outputLayer  = new Matrix(new double[,] { { 0.4 }, { 0.2} });
 
-            var BP = new BackPropagation(inputWeight, outputWeight, hiddenLayer, outputLayer, Rate);
+            var BP = new BackPropagation(inputWeight, outputWeight, hiddenLayer, outputLayer, null, Rate);
 
             Console.WriteLine($"Training Loop : {N}");
             sw.Start();
