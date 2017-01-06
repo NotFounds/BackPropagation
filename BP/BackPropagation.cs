@@ -52,7 +52,7 @@ namespace NeuralNetwork.BackPropagation
             var hidden  = _inputWeight * input + _hiddenLayer;
             var hiddenF = _hiddenLogisticFunc.F(hidden);
 
-            var output  = _outputWeight * hidden + _outputLayer;
+            var output  = _outputWeight * hiddenF + _outputLayer;
             var outputF = _outputLogisticFunc.F(output);
 
             // Calculate the error
@@ -61,14 +61,14 @@ namespace NeuralNetwork.BackPropagation
 
             for (int i = 0; i < outputAdjustment.Row; ++i)
             {
-                outputAdjustment[i, 0] = _outputLogisticFunc.Df(outputF[i, 0], output[i, 0]) * (target[i, 0] - output[i, 0]);
+                outputAdjustment[i, 0] = _outputLogisticFunc.Df(outputF[i, 0], output[i, 0]) * (target[i, 0] - outputF[i, 0]);
             }
 
             for (int i = 0; i < hiddenAdjustment.Row; ++i)
             {
                 for (int j = 0; j < outputAdjustment.Row; ++j)
                 {
-                    hiddenAdjustment[i, 0] += _outputLogisticFunc.Df(hiddenF[j, 0], hidden[j, 0]) * outputAdjustment[j, 0] * _outputWeight[j, i];
+                    hiddenAdjustment[i, 0] += _hiddenLogisticFunc.Df(hiddenF[j, 0], hidden[j, 0]) * outputAdjustment[j, 0] * _outputWeight[j, i];
                 }
             }
 
@@ -85,7 +85,7 @@ namespace NeuralNetwork.BackPropagation
             {
                 for (int j = 0; j < _outputWeight.Col; ++j)
                 {
-                    _outputWeight[i, j] += outputAdjustment[i, 0] * hidden[j, 0] * LearnRate;
+                    _outputWeight[i, j] += outputAdjustment[i, 0] * hiddenF[j, 0] * LearnRate;
                 }
             }
 

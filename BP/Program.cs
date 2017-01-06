@@ -29,12 +29,12 @@ namespace NotFounds
             const int OutputSize          = 1;
 
             // Random weight/layer
-            var inputWeight = Matrix.Random(HiddenSize, InputSize);   //new Matrix(new double[,] { { 0.1, 0.3 }, { -0.2, 0.4 }, { 0.2, -0.3} });
-            var outputWeight = Matrix.Random(OutputSize, HiddenSize); //new Matrix(new double[,] { { 0.5, 0.2, 0.3 }, { -0.4, 0.1, 0.2 } });
-            var hiddenLayer = Matrix.Random(HiddenSize, 1);           //new Matrix(new double[,] { { 0.2 }, { -0.3 }, { 0.1} });
-            var outputLayer = Matrix.Random(OutputSize, 1);           //new Matrix(new double[,] { { 0.4 }, { 0.2} });
+            var inputWeight  = Matrix.Random(HiddenSize, InputSize);   // new Matrix(new double[,] { { 0.1, 0.3 }, { -0.2, 0.4 }, { 0.5, 0.2 } });
+            var outputWeight = Matrix.Random(OutputSize, HiddenSize);  // new Matrix(new double[,] { { 0.5, -0.2, 0.3 } });
+            var hiddenLayer  = Matrix.Random(HiddenSize, 1);           // new Matrix(new double[,] { { 0.2 }, { -0.3 }, { 0.1} });
+            var outputLayer  = Matrix.Random(OutputSize, 1);           // new Matrix(new double[,] { { 0.4 } });
 
-            var BP = new BackPropagation(inputWeight, outputWeight, hiddenLayer, outputLayer, null, null, Rate);
+            var BP = new BackPropagation(inputWeight, outputWeight, hiddenLayer, outputLayer, new Sigmoid(), new Sigmoid(), Rate);
 
             Console.WriteLine($"Initial State");
             BP.Print(4);
@@ -104,8 +104,8 @@ namespace NotFounds
             sw.Start();
             for (int i = 0; i < N; ++i)
             {
-                Console.CursorLeft = 0;
-                Console.Write($"{sw.Elapsed.ToString(@"hh\:mm\:ss")}[s]  {(int)((i + 1) * 100.0 / N)}%");
+                //Console.CursorLeft = 0;
+                //Console.Write($"{sw.Elapsed.ToString(@"hh\:mm\:ss")}[s]  {(int)((i + 1) * 100.0 / N)}%");
 
                 for (int j = 0; j < TrainingData.Count; ++j)
                 {
