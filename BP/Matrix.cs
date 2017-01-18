@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NeuralNetwork
 {
-    /// <summary>
-    /// 行列クラス
-    /// </summary>
-    public class Matrix
+    public class Matrix : IEnumerable<double>
     {
-        private double[,] _Matrix;
+        private double[] _Matrix;
         public int Row
         {
             private set;
@@ -23,9 +24,17 @@ namespace NeuralNetwork
         {
             if (mat == null) throw new ArgumentNullException();
 
-            _Matrix = mat;
             Row = mat.GetLength(0);
             Col = mat.GetLength(1);
+            _Matrix = new double[Row * Col];
+            for (int i = 0; i < Row; ++i)
+            {
+                int row = i * Col;
+                for (int j = 0; j < Col; ++j)
+                {
+                    _Matrix[row + j] = mat[i, j];
+                }
+            }
         }
 
         /// <summary>
@@ -37,9 +46,9 @@ namespace NeuralNetwork
         {
             if (row <= 0 || col <= 0) throw new ArgumentException();
 
-            _Matrix = new double[row, col];
             Row = row;
             Col = col;
+            _Matrix = new double[Row * Col];
         }
 
         /// <summary>
@@ -53,17 +62,9 @@ namespace NeuralNetwork
             if (row <= 0 || col <= 0) throw new ArgumentException();
             if (args.Length != row * col) throw new ArgumentException();
 
-            _Matrix = new double[row, col];
             Row = row;
             Col = col;
-
-            for (int i = 0; i < row; ++i)
-            {
-                for (int j = 0; j < col; ++j)
-                {
-                    _Matrix[i, j] = args[i * col + j];
-                }
-            }
+            _Matrix = args;
         }
 
         public double this[int i, int j]
@@ -72,13 +73,13 @@ namespace NeuralNetwork
             {
                 if (i < 0 || i >= Row) throw new IndexOutOfRangeException();
                 if (j < 0 || j >= Col) throw new IndexOutOfRangeException();
-                _Matrix[i, j] = value;
+                _Matrix[i * Col + j] = value;
             }
             get
             {
                 if (i < 0 || i >= Row) throw new IndexOutOfRangeException();
                 if (j < 0 || j >= Col) throw new IndexOutOfRangeException();
-                return _Matrix[i, j];
+                return _Matrix[i * Col + j];
             }
         }
 
@@ -107,127 +108,6 @@ namespace NeuralNetwork
         }
 
         // O(N^2)
-        public Matrix GetLowerTriangularMatrix()
-        {
-            if (Row != Col) throw new ArithmeticException();
-            var ret = new Matrix(Row, Col);
-
-            for (int i = 0; i < Row; ++i)
-            {
-                for (int j = 0; j <= i; ++j)
-                {
-                    ret[i, j] = this[i, j];
-                }
-            }
-
-            return ret;
-        }
-
-        // O(N^2)
-        public Matrix GetUpperTriangularMatrix()
-        {
-            if (Row != Col) throw new ArithmeticException();
-            var ret = new Matrix(Row, Col);
-
-            for (int i = 0; i < Row; ++i)
-            {
-                for (int j = i; j < Col; ++j)
-                {
-                    ret[i, j] = this[i, j];
-                }
-            }
-
-            return ret;
-        }
-
-        // O(N)
-        public double Trace()
-        {
-            if (Row != Col) throw new ArithmeticException();
-            var ret = 0.0;
-            for (int i = 0; i < Row; ++i)
-                ret += this[i, i];
-            return ret;
-        }
-
-        public Matrix Inverse()
-        {
-            if (Col != Row) throw new ArithmeticException();
-            if (Col == 2) return Inverse2();
-
-            var N = Row;
-            var ret = new Matrix(N, N);
-
-            for (int i = 0; i < N; ++i)
-            {
-                if (Math.Abs(this[i, i]) < double.Epsilon) return null;
-                var inv = 1.0 / this[i, i];
-
-                for (int j = 0; j < N; j++)
-                {
-                    this[i, j] *= inv;
-                    ret[i, j] *= inv;
-                }
-
-                for (int j = 0; j < N; j++)
-                {
-                    if (i != j)
-                    {
-                        inv = this[j, i];
-                        for (int k = 0; k < N; k++)
-                        {
-                            this[j, k] -= this[i, k] * inv;
-                            ret[k, j] -= ret[i, k] * inv;
-                        }
-                    }
-                }
-            }
-
-            return ret;
-        }
-
-        public double Determinate()
-        {
-            if (Col != Row) throw new ArithmeticException();
-            if (Col == 2) return Determinant2();
-            if (Col == 3) return Determinant3();
-
-            Matrix L, U;
-            LUDecomposition(this, out L, out U);
-            double ret = 1;
-            for (int i = 0; i < U.Row; ++i)
-                ret *= U[i, i];
-            return ret;
-        }
-
-        // O(1)
-        private Matrix Inverse2()
-        {
-            var det = Determinant2();
-            if (Math.Abs(det) < double.Epsilon) return null;
-            return this / det;
-        }
-
-        // O(1)
-        private double Determinant2()
-        {
-            if (Col != 2 || Row != 2) throw new ArithmeticException();
-            return this[0, 0] * this[1, 1] - this[0, 1] * this[1, 0];
-        }
-
-        // O(1)
-        private double Determinant3()
-        {
-            if (Col != 3 || Row != 3) throw new ArithmeticException();
-            return this[0, 0] * this[1, 1] * this[2, 2]
-                + this[0, 1] * this[1, 2] * this[2, 0]
-                + this[0, 2] * this[1, 0] * this[2, 1]
-                - this[0, 2] * this[1, 1] * this[2, 0]
-                - this[1, 2] * this[2, 1] * this[0, 0]
-                - this[2, 2] * this[0, 1] * this[1, 0];
-        }
-
-        // O(N^2)
         public Matrix Transposition()
         {
             var ret = new Matrix(Col, Row);
@@ -239,21 +119,6 @@ namespace NeuralNetwork
                 }
             }
             return ret;
-        }
-
-        public Matrix Pow(int n)
-        {
-            if (Col != Row) throw new ArithmeticException();
-            if (n < 0) throw new ArithmeticException();
-            if (n == 1) return this;
-            if (n % 2 == 0)
-            {
-                return this.Pow(n / 2);
-            }
-            else
-            {
-                return this.Pow(n - 1) * this;
-            }
         }
         #region Arithmetic
 
@@ -340,7 +205,7 @@ namespace NeuralNetwork
             return ret;
         }
 
-        // O(N^2)
+        // O(N^3)
         public static Matrix operator *(Matrix a, Matrix b)
         {
             if (a.Col != b.Row) throw new ArithmeticException();
@@ -359,6 +224,28 @@ namespace NeuralNetwork
                     }
                 }
             }
+
+            return ret;
+        }
+
+        public static Matrix ParallelDot(Matrix a, Matrix b)
+        {
+            if (a.Col != b.Row) throw new ArithmeticException();
+            var row = a.Row;
+            var col = b.Col;
+            var m = a.Col;
+            var ret = new Matrix(row, col);
+
+            Parallel.For(0, row, i =>
+            {
+                for (int j = 0; j < col; ++j)
+                {
+                    for (int k = 0; k < m; ++k)
+                    {
+                        ret[i, j] += a[i, k] * b[k, j];
+                    }
+                }
+            });
 
             return ret;
         }
@@ -400,114 +287,6 @@ namespace NeuralNetwork
         #endregion
 
         #region Statistic
-
-        // O(1)
-        public static Matrix Zero(int n)
-        {
-            if (n <= 0) throw new ArgumentException();
-            return new Matrix(n, n);
-        }
-
-        // O(N)
-        public static Matrix Identity(int n)
-        {
-            if (n <= 0) throw new ArgumentException();
-            var ret = new Matrix(n, n);
-            for (int i = 0; i < n; ++i)
-                ret[i, i] = 1;
-            return ret;
-        }
-
-        public static void LUDecomposition(Matrix mat, out Matrix L, out Matrix U)
-        {
-            if (mat.Col != mat.Row) throw new ArithmeticException();
-
-            var N = mat.Row;
-
-            L = Identity(N);
-            U = Zero(N);
-
-            var sum = 0.0;
-            for (int i = 0; i < N; i++)
-            {
-                for (int j = 0; j < N; j++)
-                {
-                    if (i > j)
-                    {
-                        sum = 0.0;
-                        for (int k = 0; k < j; k++)
-                        {
-                            sum += L[i, k] * U[k, j];
-                        }
-                        L[i, j] = (mat[i, j] - sum) / U[j, j];
-                    }
-                    else
-                    {
-                        sum = 0.0;
-                        for (int k = 0; k < i; k++)
-                        {
-                            sum += L[i, k] * U[k, j];
-                        }
-                        U[i, j] = mat[i, j] - sum;
-                    }
-                }
-            }
-        }
-
-        public static Matrix LForwardsubs(Matrix L, Matrix b)
-        {
-            if (L.Row != b.Row && b.Col != 1) throw new ArithmeticException();
-            var N = L.Row;
-
-            var ret = new Matrix(N, 1);
-            for (int i = 0; i < N; ++i)
-                ret[i, 0] = b[i, 0];
-
-            for (int i = 0; i < N; i++)
-            {
-                ret[i, 0] /= L[i, i];
-                for (int j = i + 1; j < N; j++)
-                {
-                    ret[j, 0] -= ret[i, 0] * L[j, i];
-                }
-            }
-
-            return ret;
-        }
-
-        public static Matrix UBackwardsubs(Matrix U, Matrix y)
-        {
-            if (U.Row != y.Row && y.Col != 1) throw new ArithmeticException();
-            var N = U.Row;
-
-            var ret = new Matrix(N, 1);
-            for (int i = 0; i < N; i++)
-            {
-                ret[i, 0] = y[i, 0];
-            }
-            for (int i = N - 1; i >= 0; i--)
-            {
-                ret[i, 0] /= U[i, i];
-                for (int j = i - 1; j >= 0; j--)
-                {
-                    ret[j, 0] -= ret[i, 0] * U[j, i];
-                }
-            }
-
-            return ret;
-        }
-
-        public static Matrix SolveSimultaneousEquations(Matrix mat, Matrix b)
-        {
-            var N = mat.Row;
-            Matrix L, U;
-            L = Identity(N);
-            U = Zero(N);
-
-            var y = LForwardsubs(L, b);
-            return UBackwardsubs(U, y);
-        }
-
         public static Matrix Random(int row, int col, int? seed = null)
         {
             if (row <= 0 || col <= 0) throw new ArgumentException();
@@ -521,6 +300,28 @@ namespace NeuralNetwork
                 }
             }
             return ret;
+        }
+
+        IEnumerator<double> IEnumerable<double>.GetEnumerator()
+        {
+            for (int i = 0; i < Row; ++i)
+            {
+                for (int j = 0; j < Col; ++j)
+                {
+                    yield return this[i, j];
+                }
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            for (int i = 0; i < Row; ++i)
+            {
+                for (int j = 0; j < Col; ++j)
+                {
+                    yield return this[i, j];
+                }
+            }
         }
         #endregion
     }
