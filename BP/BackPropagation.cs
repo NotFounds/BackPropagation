@@ -1,6 +1,7 @@
 ﻿using System;
 
 using NeuralNetwork;
+using static NeuralNetwork.NeuralNetwork;
 
 namespace NeuralNetwork.BackPropagation
 {
@@ -11,8 +12,12 @@ namespace NeuralNetwork.BackPropagation
         public Matrix _inputWeight { private set; get; }
         public Matrix _outputWeight { private set; get; }
         public double LearnRate { set; get; }
-        public LogisticFunction _hiddenLogisticFunc;
-        public LogisticFunction _outputLogisticFunc;
+        public LogisticFunctions  HiddenLogisticFunc { private set; get; }
+        public LogisticFunctions  OutputLogisticFunc { private set; get; }
+        public LossFunctions      LossFunc { private set; get; }
+        private LogisticFunction _hiddenLogisticFunc;
+        private LogisticFunction _outputLogisticFunc;
+        private LossFunction     _lossFunc;
 
         /// <summary>
         /// 3Layer Backpropagation Class
@@ -23,20 +28,30 @@ namespace NeuralNetwork.BackPropagation
         /// <param name="outputLayer">Output layer.</param>
         /// <param name="hiddenLogisticFunc">Hidden Layer Logistic Function. Default = SigmoidFunc</param>
         /// <param name="outputLogisticFunc">Output Layer Logistic Function. Default = SigmoidFunc</param>
-        /// <param name="learnRate">Learn rate. Default = 0.001</param>
+        /// <param name="lossFunc">Output Layer Loss Function. Default = MSE</param>
+        /// <param name="learnRate">Learn rate. Default = 0.01</param>
         public BackPropagation(Matrix inputWeight, Matrix outputWeight, Matrix hiddenLayer, Matrix outputLayer,
-                               LogisticFunction hiddenLogisticFunc = null, LogisticFunction outputLogisticFunc = null, double learnRate = 0.001)
+                               LogisticFunctions hiddenLogisticFunc = LogisticFunctions.Sigmoid,
+                               LogisticFunctions outputLogisticFunc = LogisticFunctions.Sigmoid,
+                               LossFunctions lossFunc = LossFunctions.MSE, double learnRate = 0.01)
         {
-            _inputWeight  = inputWeight;
+            _inputWeight = inputWeight;
             _outputWeight = outputWeight;
-            _hiddenLayer  = hiddenLayer;
-            _outputLayer  = outputLayer;
-            _hiddenLogisticFunc = hiddenLogisticFunc ?? new Sigmoid();
-            _outputLogisticFunc = outputLogisticFunc ?? new Sigmoid();
+            _hiddenLayer = hiddenLayer;
+            _outputLayer = outputLayer;
+
+            HiddenLogisticFunc = hiddenLogisticFunc;
+            OutputLogisticFunc = outputLogisticFunc;
+            LossFunc = lossFunc;
+
+            _hiddenLogisticFunc = GetLogisticFunction(hiddenLogisticFunc);
+            _outputLogisticFunc = GetLogisticFunction(outputLogisticFunc);
+            _lossFunc = GetLossFunction(lossFunc);
+
             LearnRate = learnRate;
         }
 
-        public Matrix Run(Matrix input)
+        public Matrix Forward(Matrix input)
         {
             var hidden = _inputWeight * input + _hiddenLayer;
             _hiddenLogisticFunc.F(ref hidden);
@@ -47,21 +62,28 @@ namespace NeuralNetwork.BackPropagation
             return output;
         }
 
-        public void Train(Matrix input, Matrix target)
+        public Matrix Train(Matrix input, Matrix target, bool useParallel = false)
         {
-            var hidden  = _inputWeight * input + _hiddenLayer;
+            var hidden = (useParallel ? Matrix.ParallelDot(_inputWeight, input) : _inputWeight * input) + _hiddenLayer;
             var hiddenF = _hiddenLogisticFunc.F(hidden);
 
-            var output  = _outputWeight * hiddenF + _outputLayer;
+            var output = (useParallel ? Matrix.ParallelDot(_outputWeight, hiddenF) : _outputWeight * hiddenF) + _outputLayer;
             var outputF = _outputLogisticFunc.F(output);
 
             // Calculate the error
             var outputAdjustment = new Matrix(outputF.Row, 1);
             var hiddenAdjustment = new Matrix(hiddenF.Row, 1);
 
-            for (int i = 0; i < outputAdjustment.Row; ++i)
+            if (IsCanonicalLink(OutputLogisticFunc, LossFunc))
             {
-                outputAdjustment[i, 0] = _outputLogisticFunc.Df(outputF[i, 0], output[i, 0]) * (target[i, 0] - outputF[i, 0]);
+                outputAdjustment = outputF - target;
+            }
+            else
+            {
+                for (int i = 0; i < outputAdjustment.Row; ++i)
+                {
+                    outputAdjustment[i, 0] = _outputLogisticFunc.Df(outputF[i, 0], output[i, 0]) * _lossFunc.Df(outputF[i, 0], target[i, 0]);
+                }
             }
 
             for (int i = 0; i < hiddenAdjustment.Row; ++i)
@@ -77,7 +99,7 @@ namespace NeuralNetwork.BackPropagation
             {
                 for (int j = 0; j < _inputWeight.Col; ++j)
                 {
-                    _inputWeight[i, j] += hiddenAdjustment[i, 0] * input[j, 0] * LearnRate;
+                    _inputWeight[i, j] -= hiddenAdjustment[i, 0] * input[j, 0] * LearnRate;
                 }
             }
 
@@ -85,12 +107,14 @@ namespace NeuralNetwork.BackPropagation
             {
                 for (int j = 0; j < _outputWeight.Col; ++j)
                 {
-                    _outputWeight[i, j] += outputAdjustment[i, 0] * hiddenF[j, 0] * LearnRate;
+                    _outputWeight[i, j] -= outputAdjustment[i, 0] * hiddenF[j, 0] * LearnRate;
                 }
             }
 
-            _hiddenLayer += hiddenAdjustment * LearnRate;
-            _outputLayer += outputAdjustment * LearnRate;
+            _hiddenLayer -= hiddenAdjustment * LearnRate;
+            _outputLayer -= outputAdjustment * LearnRate;
+
+            return outputF;
         }
 
         public void Print(int n = 20)
