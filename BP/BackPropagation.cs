@@ -90,7 +90,7 @@ namespace NeuralNetwork.BackPropagation
             {
                 for (int j = 0; j < outputAdjustment.Row; ++j)
                 {
-                    hiddenAdjustment[i, 0] += _hiddenLogisticFunc.Df(hiddenF[j, 0], hidden[j, 0]) * outputAdjustment[j, 0] * _outputWeight[j, i];
+                    hiddenAdjustment[i, 0] += _hiddenLogisticFunc.Df(hiddenF[i, 0], hidden[i, 0]) * outputAdjustment[j, 0] * _outputWeight[j, i];
                 }
             }
 
